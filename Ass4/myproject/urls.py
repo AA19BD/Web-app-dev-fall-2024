@@ -2,6 +2,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from rest_framework import permissions
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_yasg.views import get_schema_view
@@ -15,6 +16,7 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="contact@myblog.local"),
     ),
     public=True,
+    permission_classes=[permissions.AllowAny,],
 )
 
 urlpatterns = [
