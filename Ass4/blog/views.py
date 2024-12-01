@@ -1,29 +1,30 @@
-from django.views.generic import ListView, DetailView
-from django.views.generic.edit import CreateView
-from .models import Post
-from .forms import PostForm
+from rest_framework import viewsets
+from .models import Post, Comment
+from .serializers import PostSerializer, CommentSerializer
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 
-class PostListView(ListView):
-    model = Post
-    template_name = 'blog/post_list.html'
-    context_object_name = 'posts'
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
-class PostDetailView(DetailView):
-    model = Post
-    template_name = 'blog/post_detail.html'
-    context_object_name = 'post'
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        post_id = self.kwargs.get('post_id')
+        if post_id:
+            return Comment.objects.filter(post_id=post_id)
+        return Comment.objects.all()
 
-class PostCreateView(CreateView):
-    model = Post
-    form_class = PostForm
-    template_name = 'blog/post_form.html'
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return self.object.get_absolute_url()
+    def perform_create(self, serializer):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(id=post_id)
+        serializer.save(post=post, author=self.request.user)
