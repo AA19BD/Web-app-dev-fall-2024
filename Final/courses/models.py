@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import models
 
 
@@ -91,8 +92,7 @@ class Payment(models.Model):
         unique_together = ['user', 'course', 'status']
 
     def __str__(self):
-        return f'{self.user.username} - {self.course.title} - {self.amount}'
-
+        return f'{self.user.username} - {self.course.title} - {self.amount} - {self.status}'
 
 
 # Quizzes
@@ -118,7 +118,9 @@ class QuizQuestion(models.Model):
     correct_option = models.CharField(max_length=1, choices=[('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D')])
 
     def __str__(self):
-        return f'{self.quiz.title} - {self.question_text}'
+        return (f'{self.quiz.title} - {self.question_text} | '
+                f'A: {self.option_a} | B: {self.option_b} | '
+                f'C: {self.option_c} | D: {self.option_d} ')
 
 
 # UserProgress
@@ -127,7 +129,37 @@ class UserProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     completed_lessons = models.IntegerField()
-    quiz_scores = models.JSONField()  # Store quiz scores as a JSON object
+    quiz_scores = models.FloatField(default=0.0)
+    progress_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f'{self.user.username} - {self.course.title}'
+
+
+class UserQuizAnswer(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.CharField(max_length=1, choices=[('A', 'Option A'), ('B', 'Option B'), ('C', 'Option C'),
+                                                              ('D', 'Option D')])
+
+    def __str__(self):
+        # Add all options to the string representation
+        return f"User {self.user.username} answer for {self.quiz.title} - {self.question.question_text} | " \
+               f"A: {self.question.option_a} | B: {self.question.option_b} | " \
+               f"C: {self.question.option_c} | D: {self.question.option_d} | " \
+               f"Selected: {self.selected_option}"
+
+# class UserQuizAnswer(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+#     question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+#     selected_option = models.CharField(max_length=1, choices=[('A', 'Option A'), ('B', 'Option B'), ('C', 'Option C'), ('D', 'Option D')])
+#
+#     def save(self, *args, **kwargs):
+#         # Set the selected_option_text before saving
+#         self.selected_option_text = dict(self._meta.get_field('selected_option').choices).get(self.selected_option, "")
+#         super().save(*args, **kwargs)
+#
+#     def __str__(self):
+#         return f"User {self.user.username} answer for {self.quiz.title} - {self.question.question_text}"

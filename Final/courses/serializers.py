@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress
+from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress, \
+    UserQuizAnswer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -77,8 +78,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    # Assign the user based on the current logged-in user, no need to explicitly send user in request
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
     course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
@@ -86,10 +86,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = ['payment_id', 'user', 'course', 'amount', 'payment_date', 'status']
 
     def validate(self, data):
-        # Automatically assign the user to the current logged-in user if not provided
-        if not data.get('user'):
-            data['user'] = self.context['request'].user
-
         user = data.get('user')
         course = data.get('course')
         status = data.get('status')
@@ -119,9 +115,55 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
 
 class UserProgressSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    course = CourseSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
         model = UserProgress
         fields = ['progress_id', 'user', 'course', 'completed_lessons', 'quiz_scores']
+
+    # def validate(self, data):
+    #     user = data.get('user')
+    #     course = data.get('course')
+    #
+    #     # Validate that the user is not already enrolled or making progress in the same course
+    #     if UserProgress.objects.filter(user=user, course=course).exists():
+    #         raise serializers.ValidationError("User is already enrolled in this course.")
+    #
+    #     return data
+
+
+class UserQuizAnswerSerializer(serializers.ModelSerializer):
+    # Ensure quiz and user are included correctly
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Link to the User model
+    quiz = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all())  # Link to the Quiz model
+    question = serializers.PrimaryKeyRelatedField(queryset=QuizQuestion.objects.all())  # Link to the QuizQuestion model
+
+    selected_option = serializers.ChoiceField(
+        choices=[('A', 'Option A'), ('B', 'Option B'), ('C', 'Option C'), ('D', 'Option D')]
+    )
+
+    # Including all options from the related QuizQuestion
+    option_a = serializers.CharField(source='question.option_a', read_only=True)
+    option_b = serializers.CharField(source='question.option_b', read_only=True)
+    option_c = serializers.CharField(source='question.option_c', read_only=True)
+    option_d = serializers.CharField(source='question.option_d', read_only=True)
+
+    class Meta:
+        model = UserQuizAnswer
+        fields = ['user', 'quiz', 'question', 'selected_option', 'option_a', 'option_b', 'option_c', 'option_d']
+
+    def validate(self, data):
+        user = data.get('user')
+        quiz = data.get('quiz')
+        question = data.get('question')
+
+        # Check if the user has already answered this question for the quiz
+        if UserQuizAnswer.objects.filter(user=user, quiz=quiz, question=question).exists():
+            raise serializers.ValidationError("You have already answered this question.")
+
+        return data
+
+    def create(self, validated_data):
+        user_quiz_answer = UserQuizAnswer.objects.create(**validated_data)
+        return user_quiz_answer

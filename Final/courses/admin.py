@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress
+from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress, \
+    UserQuizAnswer
 
 
 # User Admin
@@ -104,3 +105,13 @@ class UserProgressAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserProgress, UserProgressAdmin)
+
+
+class UserQuizAnswerAdmin(admin.ModelAdmin):
+    list_display = ('user', 'quiz', 'question', 'selected_option')
+    search_fields = ('user__username', 'quiz__title', 'question__question_text')
+    list_filter = ('quiz', 'user')
+    ordering = ('user', 'quiz')
+
+
+admin.site.register(UserQuizAnswer, UserQuizAnswerAdmin)
