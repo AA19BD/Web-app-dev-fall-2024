@@ -15,12 +15,26 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    instructor = UserSerializer(read_only=True)
-    category = CategorySerializer(read_only=True)
+    instructor = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(is_instructor=True), required=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
 
     class Meta:
         model = Course
         fields = ['course_id', 'title', 'description', 'price', 'category', 'created_at', 'instructor']
+
+    @staticmethod
+    def validate_category(value):
+        # Ensure category exists and is valid
+        if not value:
+            raise serializers.ValidationError("Category is required.")
+        return value
+
+    @staticmethod
+    def validate_instructor(value):
+        # Ensure the user is actually an instructor
+        if not value.is_instructor:
+            raise serializers.ValidationError("The user must be an instructor.")
+        return value
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
