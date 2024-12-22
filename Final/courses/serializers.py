@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
 from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress
 
 
@@ -38,16 +40,27 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    course = CourseSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
         model = Enrollment
         fields = ['enrollment_id', 'user', 'course', 'enrollment_date', 'status']
 
+    def validate(self, data):
+        user = data.get('user')
+        course = data.get('course')
+        status = data.get('status')
+
+        # Check if the user is already enrolled in the course and status is not 'completed'
+        if Enrollment.objects.filter(user=user, course=course, status=status).exists():
+            raise serializers.ValidationError("The user is already enrolled in this course.")
+
+        return data
+
 
 class LessonSerializer(serializers.ModelSerializer):
-    course = CourseSerializer(read_only=True)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
         model = Lesson
@@ -55,8 +68,8 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    course = CourseSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
 
     class Meta:
         model = Review
@@ -64,15 +77,32 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    # Assign the user based on the current logged-in user, no need to explicitly send user in request
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
         model = Payment
-        fields = ['payment_id', 'user', 'amount', 'payment_date', 'status']
+        fields = ['payment_id', 'user', 'course', 'amount', 'payment_date', 'status']
+
+    def validate(self, data):
+        # Automatically assign the user to the current logged-in user if not provided
+        if not data.get('user'):
+            data['user'] = self.context['request'].user
+
+        user = data.get('user')
+        course = data.get('course')
+        status = data.get('status')
+
+        # Check if the user has already made a payment for the course
+        if Payment.objects.filter(user=user, course=course, status=status).exists():
+            raise serializers.ValidationError("You have already made a payment for this course.")
+
+        return data
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    course = CourseSerializer(read_only=True)
+    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
 
     class Meta:
         model = Quiz
@@ -80,7 +110,7 @@ class QuizSerializer(serializers.ModelSerializer):
 
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
-    quiz = QuizSerializer(read_only=True)
+    quiz = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), required=True)
 
     class Meta:
         model = QuizQuestion

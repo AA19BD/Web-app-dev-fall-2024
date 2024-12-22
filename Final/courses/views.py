@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+
 from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress
 from .serializers import UserSerializer, CategorySerializer, CourseSerializer, EnrollmentSerializer, LessonSerializer, \
     ReviewSerializer, PaymentSerializer, QuizSerializer, QuizQuestionSerializer, UserProgressSerializer
@@ -37,6 +39,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+
+    def perform_create(self, serializer):
+        # Automatically assign the user from the request
+        serializer.save(user=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        # Optionally, handle payment updates if needed
+        instance = self.get_object()
+        if instance.user != request.user:
+            return Response({"detail": "You can only update your own payments."}, status=status.HTTP_403_FORBIDDEN)
+
+        return super().update(request, *args, **kwargs)
 
 
 class QuizViewSet(viewsets.ModelViewSet):
