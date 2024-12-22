@@ -17,7 +17,7 @@ class User(models.Model):
 
 # Categories
 class Category(models.Model):
-    category_id = models.AutoField(primary_key=True)  # category_id
+    category_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     description = models.TextField()
 
@@ -27,7 +27,7 @@ class Category(models.Model):
 
 # Courses
 class Course(models.Model):
-    course_id = models.AutoField(primary_key=True)  # course_id
+    course_id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -41,7 +41,7 @@ class Course(models.Model):
 
 # Enrollments
 class Enrollment(models.Model):
-    enrollment_id = models.AutoField(primary_key=True)  # enrollment_id
+    enrollment_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     enrollment_date = models.DateTimeField(auto_now_add=True)
@@ -83,7 +83,7 @@ class Review(models.Model):
 class Payment(models.Model):
     payment_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)  # Ensure this field is included
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('completed', 'Completed')])

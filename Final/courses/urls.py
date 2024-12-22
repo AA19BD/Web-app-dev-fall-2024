@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import UserViewSet, CategoryViewSet, CourseViewSet, EnrollmentViewSet, LessonViewSet, ReviewViewSet, \
     PaymentViewSet, QuizViewSet, QuizQuestionViewSet, UserProgressViewSet, QuizSubmissionViewSet
 
-# Create a router and register the viewsets
+
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'categories', CategoryViewSet)

@@ -69,18 +69,14 @@ class UserProgressViewSet(viewsets.ModelViewSet):
     serializer_class = UserProgressSerializer
 
     def create(self, request, *args, **kwargs):
-        # Automatically assign the user from the request
-        data = request.data.copy()  # Make a copy of the data
+        data = request.data.copy()
 
-        # Set user to the current logged-in user (request.user)
         data['user'] = request.user.id
 
-        # Optionally handle 'course' if needed, e.g., set it from request data
-        course_id = request.data.get('course')  # Get the course from request data
+        course_id = request.data.get('course')
         if not course_id:
             return Response({"detail": "Course is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Proceed to create the UserProgress object
         serializer = self.get_serializer(data=data)
 
         if serializer.is_valid():
@@ -95,13 +91,10 @@ class QuizSubmissionViewSet(viewsets.ModelViewSet):
     serializer_class = UserQuizAnswerSerializer
 
     def create(self, request, *args, **kwargs):
-        # Make a copy of the request data to modify it
         data = request.data.copy()
 
-        # Automatically assign the user from the request
-        data['user'] = request.user.id  # Automatically set the logged-in user
+        data['user'] = request.user.id
 
-        # Ensure that the quiz and question IDs are present
         quiz_id = data.get('quiz')
         question_id = data.get('question')
         selected_option = data.get('selected_option')
@@ -109,26 +102,21 @@ class QuizSubmissionViewSet(viewsets.ModelViewSet):
         if not quiz_id or not question_id or not selected_option:
             return Response({"detail": "Quiz, question, and selected_option are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Ensure the quiz exists
         try:
             quiz = Quiz.objects.get(quiz_id=quiz_id)
         except Quiz.DoesNotExist:
             return Response({"detail": "Quiz not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Ensure the question exists
         try:
             question = QuizQuestion.objects.get(question_id=question_id)
         except QuizQuestion.DoesNotExist:
             return Response({"detail": "Question not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Proceed to create the UserQuizAnswer instance
         serializer = self.get_serializer(data=data)
 
         if serializer.is_valid():
-            # Save the UserQuizAnswer instance
             serializer.save(quiz=quiz, question=question, selected_option=selected_option)
 
-            # Optionally, calculate the score or perform other logic here
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

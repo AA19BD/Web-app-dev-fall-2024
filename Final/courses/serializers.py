@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
 from .models import User, Category, Course, Enrollment, Lesson, Review, Payment, Quiz, QuizQuestion, UserProgress, \
     UserQuizAnswer
@@ -53,7 +52,6 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         course = data.get('course')
         status = data.get('status')
 
-        # Check if the user is already enrolled in the course and status is not 'completed'
         if Enrollment.objects.filter(user=user, course=course, status=status).exists():
             raise serializers.ValidationError("The user is already enrolled in this course.")
 
@@ -90,7 +88,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         course = data.get('course')
         status = data.get('status')
 
-        # Check if the user has already made a payment for the course
         if Payment.objects.filter(user=user, course=course, status=status).exists():
             raise serializers.ValidationError("You have already made a payment for this course.")
 
